@@ -1,8 +1,27 @@
-//TODO: make sure the beds & baths are >= or ==
 
 const express = require("express");
 const router = express.Router();
 const pool = require("../cp");
+
+//setups
+const propertyRenames = `
+    L_ListingID AS ListingKey,
+    L_DisplayId AS DisplayId,
+    L_Address AS UnparsedAddress,
+    L_Zip AS PostalCode,
+    L_City AS City,
+    L_State AS StateOrProvince,
+    L_Class AS PropertyType,
+    L_Type_ AS PropertySubType,
+    L_Keyword2 AS BedroomsTotal,
+    LM_Dec_3 AS BathroomsTotalInteger,
+    L_SystemPrice AS ListPrice,
+    LM_Int2_3 AS LivingArea,
+    L_Status AS MlsStatus,
+    L_Remarks AS PublicRemarks,
+    L_Photos AS Images,
+    PhotoCount AS PhotosCount
+`;
 
 //validate requests
 function isNonNegativeNumber(value) {
@@ -27,6 +46,12 @@ function isNonNegativeInteger(value) {
     );
 }
 
+function isValidID(id) {
+    return /^\d+$/.test(id);
+}
+
+
+//get by filters
 router.get("/", async (req, res) => {
     try {
         const { city, zipcode, minPrice, maxPrice, beds, baths, offset, limit } = req.query;
@@ -108,34 +133,18 @@ router.get("/", async (req, res) => {
         }
 
         if (beds) {
-            conditions.push("L_Keyword2 = ?");
+            conditions.push("L_Keyword2 >= ?");
             values.push(beds);
         }
 
         if (baths) {
-            conditions.push("LM_Dec_3 = ?");
+            conditions.push("LM_Dec_3 >= ?");
             values.push(baths);
         }
 
 
         let sql = `
-            SELECT
-                L_ListingID AS ListingKey,
-                L_DisplayId AS DisplayId,
-                L_Address AS UnparsedAddress,
-                L_Zip AS PostalCode,
-                L_City AS City,
-                L_State AS StateOrProvince,
-                L_Class AS PropertyType,
-                L_Type_ AS PropertySubType,
-                L_Keyword2 AS BedroomsTotal,
-                LM_Dec_3 AS BathroomsTotalInteger,
-                L_SystemPrice AS ListPrice,
-                LM_Int2_3 AS LivingArea,
-                L_Status AS MlsStatus,
-                L_Remarks AS PublicRemarks,
-                L_Photos AS Images,
-                PhotoCount AS PhotosCount
+            SELECT ${propertyRenames}
             FROM rets_property
         `;
 
@@ -170,6 +179,93 @@ router.get("/", async (req, res) => {
         });
     }
 });
-module.exports = router;
 
-//16: Before adding indexes, key = NULL, rows = 36866; After adding indexes, key = the new added "idx_rets_property_price", rows = 8128
+//get by id/openhouses
+router.get("/:id/openhouses", async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!isValidID(id)) {
+            return res.status(400).json({
+                error: "id must contain only digits",
+            });
+        }
+        const [rows] = await pool.query(
+            `
+            SELECT ${propertyRenames}
+            FROM rets_property
+            WHERE L_ListingID = ? OR L_DisplayId = ?
+            LIMIT 1
+            `,
+            [id, id]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({
+                error: "Property not found",
+            });
+        }
+        const [openHouseRows] = await pool.query(
+            `
+            SELECT
+                id AS OpenHouseId,
+                L_ListingID AS ListingKey,
+                L_DisplayId AS DisplayId,
+                OpenHouseDate,
+                OH_StartTime AS StartTime,
+                OH_EndTime AS EndTime,
+                OH_StartDate AS StartDate,
+                OH_EndDate AS EndDate,
+                all_data AS AllData,
+                updated_date AS UpdatedDate
+            FROM rets_openhouse
+            WHERE L_ListingID = ?
+            ORDER BY OpenHouseDate ASC, OH_StartTime ASC
+            `,
+            [id]
+        );
+
+        res.status(200).json(openHouseRows);
+    } catch(error) {
+        console.error("Error fetching open houses:", error.message);
+
+        res.status(500).json({
+            error: "Failed to fetch the open house",
+        });
+    }
+});
+
+//get by id
+router.get("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!isValidID(id)) {
+            return res.status(400).json({
+                error: "id must contain only digits",
+            });
+        }
+        const [rows] = await pool.query(
+            `
+            SELECT ${propertyRenames}
+            FROM rets_property
+            WHERE L_ListingID = ? OR L_DisplayId = ?
+            LIMIT 1
+            `,
+            [id, id]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({
+                error: "Property not found",
+            });
+        }
+
+        res.status(200).json(rows[0]);
+    } catch(error) {
+        console.error("Error fetching property by ID:", error.message);
+
+        res.status(500).json({
+            error: "Failed to fetch property",
+        });
+    }
+});
+
+
+module.exports = router;

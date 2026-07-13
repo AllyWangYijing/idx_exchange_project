@@ -9,6 +9,22 @@ app.use(express.json());
 const propertiesRouter = require("./route/properties");
 const PORT = process.env.PORT || 5000;
 
+
+//------------------------request logging midware---------------------------
+
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(
+      `${new Date().toISOString()} ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`
+    );
+  });
+
+  next();
+});
+
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -24,9 +40,10 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
-
+//----properties-----
 app.use("/api/properties", propertiesRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
