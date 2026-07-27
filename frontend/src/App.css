@@ -61,3 +61,27 @@ h1 {
   color: darkred;
   text-align: center;
 }
+
+.property-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+  justify-content: center;
+}
+
+.property-filters input,
+.property-filters select,
+.property-filters button {
+  padding: 8px;
+  font-size: 14px;
+}
+
+.property-filters button {
+  cursor: pointer;
+}
+
+.active-filters {
+  text-align: center;
+  color: #555;
+}
