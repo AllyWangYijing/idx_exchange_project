@@ -20,9 +20,9 @@ test("renders all six filter inputs", () => {
       />
     );
   
-    expect(screen.getByPlaceholderText("City")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("City(e.g. Walnut)")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("ZIP code")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Min price")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Min price(e.g. 200000)")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Max price")).toBeInTheDocument();
     expect(screen.getByText("Beds")).toBeInTheDocument();
     expect(screen.getByText("Baths")).toBeInTheDocument();
@@ -40,7 +40,7 @@ test("calls onFilterChange when a filter input changes", () => {
     />
   );
 
-  fireEvent.change(screen.getByPlaceholderText("City"), {
+  fireEvent.change(screen.getByPlaceholderText("City(e.g. Walnut)"), {
     target: { value: "Walnut" },
   });
 

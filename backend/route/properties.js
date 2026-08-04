@@ -143,25 +143,33 @@ router.get("/", async (req, res) => {
         }
 
 
-        let sql = `
+        const whereClause =
+            conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
+
+        const dataSql = `
             SELECT ${propertyRenames}
             FROM rets_property
+            ${whereClause}
+            LIMIT ? OFFSET ?
         `;
 
-        if (conditions.length > 0) {
-            sql += " WHERE " + conditions.join(" AND ");
-        }
-        sql += " LIMIT ? OFFSET ?";
-        values.push(pageLimit, pageOffset);
+        const countSql = `
+            SELECT COUNT(*) AS total
+            FROM rets_property
+            ${whereClause}
+        `;
 
-        //query
-        const [rows] = await pool.query(sql, values);
-        
+        const dataValues = [...values, pageLimit, pageOffset];
+
+        const [rows] = await pool.query(dataSql, dataValues);
+        const [countRows] = await pool.query(countSql, values);
+
         res.status(200).json({
             data: rows,
             limit: pageLimit,
             offset: pageOffset,
             count: rows.length,
+            total: countRows[0].total,
             filters: {
                 city,
                 zipcode,

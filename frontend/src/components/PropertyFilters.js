@@ -4,7 +4,7 @@ function PropertyFilters({ filters, onFilterChange, onSearch, onClear }) {
           <input
             type="text"
             name="city"
-            placeholder="City"
+            placeholder="City(e.g. Walnut)"
             value={filters.city}
             onChange={onFilterChange}
           />
@@ -20,7 +20,7 @@ function PropertyFilters({ filters, onFilterChange, onSearch, onClear }) {
           <input
             type="number"
             name="minPrice"
-            placeholder="Min price"
+            placeholder="Min price(e.g. 200000)"
             value={filters.minPrice}
             onChange={onFilterChange}
           />

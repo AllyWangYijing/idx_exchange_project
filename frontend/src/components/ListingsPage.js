@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchProperties } from "../api/client";
 import PropertyCard from "./PropertyCard";
 import PropertyFilters from "./PropertyFilters";
+import Pagination from "./Pagination"
 
 const emptyFilters = {
   city: "",
@@ -14,29 +15,33 @@ const emptyFilters = {
 
 function ListingsPage() {
   const [properties, setProperties] = useState([]);
-  const [count, setCount] = useState(0);
+  //const [count, setCount] = useState(0);
   const [filters, setFilters] = useState(emptyFilters);
   const [activeFilters, setActiveFilters] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const [total, setTotal] = useState(0);
 
-  async function loadProperties(params = {}) {
+  async function loadProperties(params = {}, page = currentPage) {
     try {
       setLoading(true);
       setError("");
-
       const result = await fetchProperties({
-        limit: 20,
-        offset: 0,
+        limit: itemsPerPage,
+        offset: (page - 1) * itemsPerPage,
         ...params,
       });
 
       setProperties(result.data || []);
-      setCount(result.count || 0);
+      //setCount(result.count || 0);
+      setTotal(result.total || 0);
     } catch (err) {
       setError(err.message || "Failed to load properties");
       setProperties([]);
-      setCount(0);
+      //setCount(0);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -44,6 +49,7 @@ function ListingsPage() {
 
   useEffect(() => {
     loadProperties();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleFilterChange(event) {
@@ -69,18 +75,28 @@ function ListingsPage() {
 
   function handleSearch(event) {
     event.preventDefault();
-
     const cleanedFilters = removeEmptyFilters(filters);
     setActiveFilters(cleanedFilters);
-    loadProperties(cleanedFilters);
+    setCurrentPage(1);
+    loadProperties(cleanedFilters, 1);
   }
 
   function handleClear() {
     setFilters(emptyFilters);
     setActiveFilters({});
-    loadProperties();
+    setCurrentPage(1);
+    loadProperties({}, 1);
   }
 
+  function handlePageChange(page) {
+    setCurrentPage(page);
+    loadProperties(activeFilters, page);
+    window.scrollTo(0, 0);
+  }
+
+  const totalPages = Math.ceil(total / itemsPerPage);
+  const startItem = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, total);
   if (loading) {
     return <p>Loading properties...</p>;
   }
@@ -100,7 +116,9 @@ function ListingsPage() {
         onClear={handleClear}
       />
 
-      <p>Showing {count} properties</p>
+      <p>
+        Showing {startItem}-{endItem} of {total} properties
+      </p>
 
       {Object.keys(activeFilters).length > 0 && (
         <p className="active-filters">
@@ -114,11 +132,19 @@ function ListingsPage() {
       {properties.length === 0 ? (
         <p>No properties found. Try changing your filters.</p>
       ) : (
-        <div className="property-grid">
-          {properties.map((property) => (
-            <PropertyCard key={property.ListingKey} property={property} />
-          ))}
-        </div>
+        <>
+          <div className="property-grid">
+            {properties.map((property) => (
+              <PropertyCard key={property.ListingKey} property={property} />
+            ))}
+          </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </>
       )}
     </div>
   );
