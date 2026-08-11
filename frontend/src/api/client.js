@@ -14,3 +14,20 @@ export async function fetchProperties(params = {}) {
     }
     return response.json();
   }
+
+  export async function fetchPropertyById(id) {
+    const response = await fetch(`/api/properties/${id}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch property: ${response.status}`);
+    }
+    return response.json();
+  }
+  
+  export async function fetchOpenHouses(id) {
+    const response = await fetch(`/api/properties/${id}/openhouses`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch open houses: ${response.status}`);
+    }
+  
+    return response.json();
+  }
