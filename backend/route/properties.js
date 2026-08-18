@@ -20,7 +20,9 @@ const propertyRenames = `
     L_Status AS MlsStatus,
     L_Remarks AS PublicRemarks,
     L_Photos AS Images,
-    PhotoCount AS PhotosCount
+    PhotoCount AS PhotosCount,
+    LMD_MP_Latitude AS Latitude,
+    LMD_MP_Longitude AS Longitude
 `;
 
 //validate requests
